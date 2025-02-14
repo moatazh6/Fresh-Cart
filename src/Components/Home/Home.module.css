@@ -1,0 +1,6 @@
+.home-container {
+  background-image: url("../../assets/images/light-patten.svg"); /* مسار الصورة */
+  background-size: cover; /* تغطية كاملة */
+  background-position: center; /* توسيط الصورة */
+  /* min-height: 100vh; */
+}

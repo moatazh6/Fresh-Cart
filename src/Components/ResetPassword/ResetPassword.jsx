@@ -51,7 +51,7 @@ export default function ResetPassword() {
           className="w-[80%] p-2 border my-3 focus:border-emerald-500 focus:outline-none"
           placeholder="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)} 
+          onChange={(e) => setEmail(e.target.value)} // تحديث البريد الإلكتروني المدخل
         />
       </div>
 
@@ -61,7 +61,7 @@ export default function ResetPassword() {
           className="w-[80%] p-2 border my-3 focus:border-emerald-500 focus:outline-none"
           placeholder="New Password"
           value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)} 
+          onChange={(e) => setNewPassword(e.target.value)} // تحديث كلمة المرور المدخلة
         />
       </div>
 

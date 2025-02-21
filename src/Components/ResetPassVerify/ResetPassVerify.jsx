@@ -21,7 +21,7 @@ export default function Verifypass() {
       })
       .then((response) => {
         setLoading(false);
-        toast.success(response.data.data);
+        toast.success("Reset code verified successfully!");
         navigate("/resetPassword");
       })
       .catch((error) => {
@@ -43,13 +43,13 @@ export default function Verifypass() {
           className="w-[80%] p-2 border my-3 focus:border-emerald-500 focus:outline-none"
           placeholder="Enter reset code"
           value={resetCode}
-          onChange={(e) => setResetCode(e.target.value)}  
+          onChange={(e) => setResetCode(e.target.value)} // تحديث قيمة رمز التحقق
         />
       </div>
 
       <button
         onClick={verifyResetCode}
-        className="py-2 px-3 rounded-lg  border border-emerald-600 text-emerald-500 mt-4 hover:text-white hover:bg-emerald-600 transition-all"
+        className="py-2 px-3 rounded-lg border border-emerald-600 text-emerald-500 mt-4 hover:text-white hover:bg-emerald-600"
       >
         {loading ? <i className="fas fa-spinner fa-spin"></i> : "Verify"}
       </button>

@@ -1,76 +1,110 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
+import { Helmet,HelmetProvider } from "react-helmet";
+// import { Helmet, HelmetProvider } from "react-helmet-async";
 
-export default function LatestOrder() {
-  const [latestOrder, setLatestOrder] = useState(null);
-  const [totalOrderPrice, setTotalOrderPrice] = useState(0);
+export default function Allorders() {
+  const [orders, setOrders] = useState(null);
+  const userLogin = localStorage.getItem("userToken");
 
-  async function getLatestOrder() {
-    const token = localStorage.getItem("userToken");
-    if (!token) return;
+  const { id } = jwtDecode(userLogin);
 
-    const res = await axios.get(
-      "https://ecommerce.routemisr.com/api/v1/orders/",
-      {
-        headers: { Authorization: 'Bearer ${token}' },
-      }
-    );
-
-    if (res.data.data?.length > 0) {
-      const sortedOrders = res.data.data.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      const lastOrder = sortedOrders[0];
-      setLatestOrder(lastOrder);
-      setTotalOrderPrice(lastOrder.totalOrderPrice);
+  async function getOrders() {
+    const options = {
+      url: `https://ecommerce.routemisr.com/api/v1/orders/user/${id}`,
+      method: "GET",
+    };
+    const { data } = await axios.request(options);
+    if (data) {
+      setOrders(data);
     }
   }
 
   useEffect(() => {
-    getLatestOrder();
+    getOrders();
   }, []);
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Latest Order</h2>
+    <React.Fragment>
+      <Helmet>
+        <title>Orders</title>
+      </Helmet>
 
-      {latestOrder ? (
-        <div className="space-y-6">
-          <div className="bg-gray-100 p-4 rounded-md shadow-md text-center">
-            <h3 className="text-xl font-semibold text-gray-800">
-              Total:{" "}
-              <span className="text-emerald-600">
-                ${totalOrderPrice.toFixed(2)}
-              </span>
-            </h3>
-       
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {latestOrder.cartItems?.map((item, i) => (
-              <div
-                key={i}
-                className="p-4 border rounded-md bg-white shadow-sm text-center"
-              >
-                <img
-                  src={item.product.imageCover}
-                  alt={item.product.title}
-                  className="w-32 h-32 object-contain mx-auto mb-3"
-                />
-                <p className="font-medium text-lg mb-2">{item.product.title}</p>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Price: ${item.price}</span>
-                  <span className="text-gray-600">Quantity: {item.count}</span>
-                </div>
-              </div>
-            ))}
+      {!orders ? (
+        <div className="flex h-screen justify-center items-center">
+          {/* <Loadimg /> */}
+          <div className="parentLoader w-[80%] mx-auto py-28">
+            <span className="loader"></span>
           </div>
         </div>
+      ) : orders.length === 0 ? (
+        <div className="flex  justify-center items-center">
+          <img className="w-[50%] pt-20 pb-10" src={imagere} alt="No orders" />
+        </div>
       ) : (
-        <p className="text-red-600 text-center text-lg font-semibold">
-          No Orders Found       
-           </p>
+        orders.map((order) => (
+          <div
+            key={order.id}
+            className="bg-white border w-3/4 mx-auto my-24 py-3 border-b hover:bg-gray-50"
+          >
+            <div className="flex justify-between my-1 flex-wrap">
+              <div className="flex flex-col justify-center mx-3">
+                <p className="text-red-400 font-semibold text-xl">Order ID</p>
+                <p className="text-green-400 font-semibold text-xl">
+                  #{order.id}
+                </p>
+              </div>
+              <div className="flex flex-col justify-center mx-3">
+                <p className="text-red-400 font-semibold text-xl">
+                  Total Price
+                </p>
+                <p className="text-green-400 font-semibold text-xl">
+                  {order.totalOrderPrice} EGP
+                </p>
+              </div>
+              <div className="flex justify-between">
+                {order.isDelivered ? (
+                  <button className="bg-green-700 font-light text-white p-2 flex text-center justify-center items-center my-5 w-fit mx-3 rounded-md py-1">
+                    Delivered
+                  </button>
+                ) : (
+                  <button className="bg-gray-700 font-light text-white p-2 flex text-center justify-center items-center my-5 w-fit mx-3 rounded-md py-1">
+                    Under delivery
+                  </button>
+                )}
+                {order.isPaid ? (
+                  <button className="bg-blue-700 font-light text-white p-2 flex text-center justify-center items-center my-5 w-fit mx-3 rounded-md py-1">
+                    Paid
+                  </button>
+                ) : (
+                  <button className="bg-red-700 font-light text-white p-2 rounded-md flex text-center justify-center items-center my-5 w-fit mx-3 py-1">
+                    Unpaid
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center flex-wrap">
+              {order.cartItems.map((product) => (
+                <div
+                  key={product._id}
+                  className="p-4 w-full md:w-1/3 lg:w-1/5 mx-2 flex flex-col justify-center items-center"
+                >
+                  <img
+                    src={product.product.imageCover}
+                    className="md:w-32 w-2/3 max-h-full object-contain"
+                    alt={product.product.title}
+                  />
+                  <p>
+                    {product.product.title.split(" ").slice(0, 2).join(" ")}
+                  </p>
+                  <p>{product.price} EGP</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
       )}
-    </div>
+    </React.Fragment>
   );
 }

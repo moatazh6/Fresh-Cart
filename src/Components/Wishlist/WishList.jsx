@@ -1,123 +1,136 @@
-import { useState, useEffect, useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { WishContext } from "../Context/WishContext";
 import { CartContext } from "../Context/CartContext";
-import toast from "./../../../node_modules/react-hot-toast/src/index";
+import toast from "react-hot-toast";
 
-export default function Wishlist() {
-  const [wishlist, setWishlist] = useState(
-    JSON.parse(localStorage.getItem("wishlist")) || []
-  );
-  const [currentId, setCurrentId] = useState(0);
-  const [loading, setLoading] = useState(false);
+export default function WishList() {
+  const { getWishList, getDeleteWishList } = useContext(WishContext);
+  const { addProductToCart, setnumOfCartItems, numOfCartItems } =
+    useContext(CartContext);
+  const [wishListItems, setWishListItems] = useState([]);
+  const [deletewishListItems, setDeleteWishListItems] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [loadingId, setLoadingId] = useState(null);
+  const [currentId, setCurrentId] = useState(null);
 
-  let {
-    addProductToCart,
-    setnumberItems,
-    numberItems,
-    cartItems,
-    setcartItems,
-    removeItem,
-  } = useContext(CartContext);
+  async function getWishItems() {
+    try {
+      setLoading(true);
+      const response = await getWishList();
+      setWishListItems(response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching wish list:", error);
+      setError("Failed to fetch wish list.");
+      setLoading(false);
+    }
+  }
+
+  async function getDeleteWishItems(id) {
+    try {
+      setLoadingId(id);
+      const response = await getDeleteWishList(id);
+      setDeleteWishListItems(response.data);
+      setLoadingId(null);
+    } catch (error) {
+      console.error("Error deleting wish list item:", error);
+      setError("Failed to delete wish list item.");
+      setLoadingId(null);
+    }
+  }
 
   async function addToCart(id) {
     setCurrentId(id);
-    setLoading(true);
-
-    let updatedCart = [...cartItems];
-    let existingProduct = updatedCart.find((item) => item.id == id);
-
-    if (existingProduct) {
-      existingProduct.quantity += 1;
-      setcartItems(updatedCart);
-      toast.success("Product quantity increased in cart!");
-    } else {
+    try {
       let res = await addProductToCart(id);
-
       if (res.data.status === "success") {
-        const newProduct = { ...res.data.product, quantity: 1 };
-        setcartItems([...updatedCart, newProduct]);
-        setnumberItems(numberItems + 1);
+        setnumOfCartItems(numOfCartItems + 1);
+
         toast.success(res.data.message);
+
+        await getDeleteWishList(id);
+
+        setWishListItems((prevItems) =>
+          prevItems.filter((item) => item.id !== id)
+        );
       } else {
         toast.error(res.data.message);
       }
+    } catch (error) {
+      toast.error("Failed to add product to cart.");
     }
-
-    setLoading(false);
-  }
-  async function deleteItem(productId) {
-    setLoading(true);
-
-    let res = await removeItem(productId);
-    if (res.data.status == "success") {
-      if (wishlist.find((item) => item.id === productId) && wishlist.length > 1)
-        if (cartItems.find((item) => item.id === productId))
-          cartItems.find((item) => item.id === productId).quantity -= 1;
-
-      if (cartItems.find((item) => item.id === productId) <= 0)
-        setnumberItems((prev) => prev - 1);
-
-      setcartItems((prevCart) =>
-        prevCart.filter((item) => item.id !== productId)
-      );
-
-      setWishlist((prevWishlist) =>
-        prevWishlist.filter((item) => item.id !== productId)
-      );
-
-      toast.success("Item removed successfully!");
-    } else {
-      toast.error("Error removing item!");
-    }
-
-    setLoading(false);
+    setCurrentId(null);
   }
 
   useEffect(() => {
-    localStorage.setItem("wishlist", JSON.stringify(wishlist));
-  }, [wishlist]);
+    getWishItems();
+  }, [deletewishListItems]);
+
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-center text-green-500">
-        Wishlist <i className="fas fa-heart text-lime-700"></i>
-      </h1>
-
-      {wishlist.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-          {wishlist.map((product) => (
-            <div
-              key={product.id}
-              className="border p-4 rounded-lg shadow-md text-center"
-            >
-              <img src={product.imageCover} className="w-full mb-2" />
-              <div className="flex justify-between">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  {product.title}
-                </h3>
-                <p className="text-gray-500">{product.price}EGP</p>
+    <div className="container mx-auto px-4 py-6">
+      <h2 className="text-2xl font-bold mb-6">My Wish List</h2>
+      {wishListItems?.length > 0 ? (
+        <div className="flex flex-col gap-6">
+          {wishListItems.map(
+            (
+              wish
+            ) => (
+              <div
+                key={wish.id}
+                className="bg-white shadow-md rounded-lg overflow-hidden p-4 flex flex-col sm:flex-row items-center sm:items-start"
+              >
+                <img
+                  src={wish.imageCover}
+                  className="w-full sm:w-32 sm:h-32 object-cover rounded-lg"
+                  alt={wish.title}
+                />
+                <div className="mt-4 sm:mt-0 sm:ml-6 flex-1 text-center sm:text-left">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {wish.title}
+                  </h3>
+                  <p className="text-green-600 text-lg font-semibold">
+                    {wish.price} EGP
+                  </p>
+                  <button
+                    onClick={() => getDeleteWishItems(wish.id)}
+                    className="text-red-600 font-medium flex items-center justify-center sm:justify-start gap-1 mt-2"
+                    disabled={loadingId === wish.id}
+                  >
+                    {loadingId === wish.id ? (
+                      <i className="fas fa-spinner fa-spin"></i>
+                    ) : (
+                      <>
+                        <i className="fas fa-trash"></i> Remove
+                      </>
+                    )}
+                  </button>
+                </div>
+                <button
+                  onClick={() => addToCart(wish.id)} // ✅ إصلاح `product.id` إلى `wish.id`
+                  className="mt-4 sm:mt-0 sm:ml-auto border border-green-500 text-green-600 px-4 py-2 rounded-lg hover:bg-green-500 hover:text-white transition"
+                  disabled={currentId === wish.id} // ✅ تعطيل الزر عند إضافة العنصر
+                >
+                  {currentId === wish.id ? ( // ✅ إصلاح `Loading` إلى `loading`
+                    <i className="fas fa-spinner fa-spin"></i>
+                  ) : (
+                    "Add To Cart"
+                  )}
+                </button>
               </div>
-              <button
-                className="btn mt-2"
-                onClick={() => addToCart(product.id)}
-              >
-                {loading && currentId === product.id ? (
-                  <i className="fas fa-spinner fa-spin"></i>
-                ) : (
-                  "Add To Cart"
-                )}
-              </button>
-              <span
-                onClick={() => deleteItem(product.id)}
-                href="#"
-                className="cursor-pointer font-medium text-red-600 dark:text-red-500 hover:underline"
-              >
-                Remove
-              </span>
-            </div>
-          ))}
+            )
+          )}
+        </div>
+      ) : loading ? (
+        <div className="parentLoader w-[80%] mx-auto py-28">
+          <span className="loader"></span>
         </div>
       ) : (
-        <p className="text-center text-gray-500">No items in wishlist.</p>
+        <p>No items in your wish list.</p>
       )}
     </div>
   );

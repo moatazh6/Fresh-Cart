@@ -1,46 +1,59 @@
-import React, { useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../Context/AuthoContext";
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
-export default function ForgotPassword() {
+export default function ForgetPass() {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const { forgotPassword } = useContext(AuthContext); 
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    forgotPassword(email).then((res) => {
-      if (res.status === "success") {
-        setMessage("Check your email for the reset link.");
-      } else {
-        setMessage(res.message || "Something went wrong.");
-      }
-});
+  function forgetpass() {
+    if (!email) {
+      alert("Please enter a valid email address.");
+      return;
+    }
+
+    setLoading(true);
+    axios
+      .post(`https://ecommerce.routemisr.com/api/v1/auth/forgotPasswords`, {
+        email: email,
+      })
+      .then((response) => {
+        setLoading(false);
+
+        toast.success("A verification code has been sent to your email!");
+        navigate("/verifypass");
+      })
+      .catch((error) => {
+        setLoading(false);
+
+        toast.error("There was an error. Please try again.");
+        console.error(error);
+      });
   }
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white shadow-md rounded-lg">
-      <h2 className="text-xl font-bold mb-4 text-center">Forgot Password</h2>
-      {message && <p className="text-green-600 text-center">{message}</p>}
-      <form onSubmit={handleSubmit}>
+    <>
+      <h1 className="mt-6 text-2xl font-bold capitalize">
+        Please enter your email to receive a verification code
+      </h1>
+      <div>
         <input
           type="email"
-          placeholder="Enter your email"
-          className="w-full p-2 border rounded mb-2"
+          className="w-[80%] p-2 border my-3 focus:border-emerald-500 focus:outline-none"
+          placeholder="Email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+          onChange={(e) => setEmail(e.target.value)} // تحديث البريد الإلكتروني المدخل
         />
-        <Link to={"/resetPassVerify"}>
-          <button
-            type="submit"
-            className="w-full bg-emerald-600 text-white p-2 rounded"
-          >
-            Send Reset Link
-          </button>
-        </Link>
-      </form>
-    </div>
+      </div>
+
+      <button
+        onClick={() => forgetpass()}
+        className="py-2 px-3 rounded-lg border border-emerald-600 text-emerald-500 mt-4 hover:text-white hover:bg-emerald-600"
+      >
+        {loading ? <i className="fas fa-spinner fa-spin"></i> : "Verify"}
+      </button>
+    </>
   );
 }
